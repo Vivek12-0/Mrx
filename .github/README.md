@@ -31,7 +31,7 @@ everything works **professionally & reliably**.
 ## 🚀 Deploy on Heroku
 
 <p align="center">
-  <a href="https://dashboard.heroku.com/new?template=YOUR_GITHUB_REPO_LINK">
+  <a href="https://dashboard.heroku.com/new?template=https://github.com/Vivek12-0/Mrx">
     <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy on Heroku">
   </a>
 </p>
