@@ -1,43 +1,60 @@
 # 🎵 Telegram Music Bot
 
 <p align="center">
-  <b>A fast, smooth & powerful Telegram Music Bot</b><br>
-  High-quality Audio & Video playback with a premium experience
+  <b>Fast • Smooth • Powerful Telegram Music Bot</b><br>
+  High-quality Audio & Video playback with premium experience
 </p>
 
 ---
 
 ## ✨ About This Bot
 
-This **Telegram Music Bot** is crafted for users who love **speed, stability, and crystal-clear music**.  
-Designed specially for **groups & channels**, it delivers a smooth and lag-free experience every time.
+This **Telegram Music Bot** is built for **groups & channels** who want
+⚡ speed, 🎧 quality and 💎 stability.
 
-From queue management to seamless playback — everything feels **clean, fast & professional**.
+Lag-free playback, smooth queue system and clean commands —
+everything works **professionally & reliably**.
 
 ---
 
-## 🚀 Key Highlights
+## 🚀 Key Features
 
 - 🎧 High-Quality Music Streaming  
-- ⚡ Ultra-Fast & Smooth Performance  
-- 🎥 Audio + Video Playback  
-- 🔁 Stable Queue & Smart Controls  
-- 🧩 Simple & User-Friendly Commands  
-- 💎 Premium UI Experience  
+- 🎥 Audio & Video Playback  
+- ⚡ Fast & Smooth Performance  
+- 🔁 Stable Queue & Controls  
+- 🧩 Easy Commands  
+- 💎 Premium User Experience  
 
 ---
 
 ## 🚀 Deploy on Heroku
 
 <p align="center">
-  <a href="https://dashboard.heroku.com/new">
+  <a href="https://dashboard.heroku.com/new?template=YOUR_GITHUB_REPO_LINK">
     <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy on Heroku">
   </a>
 </p>
 
+> 🔑 Deploy button par click karte hi Heroku automatically maangega:  
+> `API_ID`, `API_HASH`, `BOT_TOKEN`, `SESSION`, etc.
+
 ---
 
-## 📢 Official Buttons
+## ⚙️ Required Variables
+
+Make sure you fill all required variables while deploying:
+
+- `API_ID`
+- `API_HASH`
+- `BOT_TOKEN`
+- `STRING_SESSION`
+- `LOG_GROUP_ID`
+- `MONGO_DB_URI`
+
+---
+
+## 📢 Official Links
 
 <p align="center">
   <a href="https://t.me/botadda">
@@ -61,8 +78,8 @@ From queue management to seamless playback — everything feels **clean, fast & 
 
 ## ❤️ Final Note
 
-This project is maintained with care to provide a **premium Telegram music experience**.  
-Stay connected via the update channel for new features & improvements.
+This bot is maintained with care to provide a **premium Telegram music experience**.  
+Join the update channel to stay informed about new features.
 
 <p align="center">
   <b>Made with ❤️ for music lovers</b>
