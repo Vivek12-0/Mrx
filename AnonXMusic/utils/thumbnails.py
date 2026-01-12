@@ -3,10 +3,9 @@ import re
 
 import aiofiles
 import aiohttp
-import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from unidecode import unidecode
 from ytSearch import VideosSearch
+from unidecode import unidecode
 
 from AnonXMusic import app
 from config import YOUTUBE_IMG_URL
@@ -15,112 +14,137 @@ from config import YOUTUBE_IMG_URL
 def changeImageSize(maxWidth, maxHeight, image):
     widthRatio = maxWidth / image.size[0]
     heightRatio = maxHeight / image.size[1]
-    newWidth = int(widthRatio * image.size[0])
-    newHeight = int(heightRatio * image.size[1])
-    return image.resize((newWidth, newHeight))
+    ratio = min(widthRatio, heightRatio)
+    return image.resize(
+        (int(image.size[0] * ratio), int(image.size[1] * ratio))
+    )
 
 
 def clear(text):
-    words = text.split(" ")
-    title = ""
-    for i in words:
-        if len(title) + len(i) < 60:
-            title += " " + i
-    return title.strip()
+    out = ""
+    for word in text.split():
+        if len(out) + len(word) < 60:
+            out += " " + word
+    return out.strip()
+
+
+def rounded_rectangle(draw, xy, radius, fill):
+    x1, y1, x2, y2 = xy
+    draw.rounded_rectangle(xy, radius=radius, fill=fill)
 
 
 async def get_thumb(videoid, user_id):
     try:
-        if os.path.isfile(f"cache/{videoid}_{user_id}.png"):
-            return f"cache/{videoid}_{user_id}.png"
+        path = f"cache/{videoid}_{user_id}.png"
+        if os.path.isfile(path):
+            return path
 
-        url = f"https://www.youtube.com/watch?v={videoid}"
-        results = VideosSearch(url, limit=1)
+        search = VideosSearch(f"https://www.youtube.com/watch?v={videoid}", limit=1)
+        result = (await search.next())["result"][0]
 
-        for result in (await results.next())["result"]:
-            title = result.get("title", "Unsupported Title")
-            title = re.sub("\W+", " ", title).title()
-            duration = result.get("duration", "Unknown Mins")
-            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
-            views = result.get("viewCount", {}).get("short", "Unknown Views")
-            channel = result.get("channel", {}).get("name", "Unknown Channel")
+        title = clear(result.get("title", "Unknown Title"))
+        duration = result.get("duration", "00:00")
+        views = result.get("viewCount", {}).get("short", "")
+        channel = result.get("channel", {}).get("name", "")
 
-        # Download youtube thumbnail
+        thumb_url = result["thumbnails"][0]["url"].split("?")[0]
+
         async with aiohttp.ClientSession() as session:
-            async with session.get(thumbnail) as resp:
-                if resp.status == 200:
-                    async with aiofiles.open(f"cache/thumb{videoid}.png", "wb") as f:
-                        await f.write(await resp.read())
+            async with session.get(thumb_url) as r:
+                async with aiofiles.open("cache/temp.png", "wb") as f:
+                    await f.write(await r.read())
 
-        youtube = Image.open(f"cache/thumb{videoid}.png").convert("RGBA")
+        yt = Image.open("cache/temp.png").convert("RGBA")
 
-        # Background (blurred)
-        base = changeImageSize(1280, 720, youtube)
-        background = base.filter(ImageFilter.BoxBlur(12))
-        background = ImageEnhance.Brightness(background).enhance(0.45)
+        base = changeImageSize(1280, 720, yt)
+        bg = base.filter(ImageFilter.GaussianBlur(15))
+        bg = ImageEnhance.Brightness(bg).enhance(0.4)
 
-        draw = ImageDraw.Draw(background)
+        draw = ImageDraw.Draw(bg)
 
-        # 🔲 CENTER RECTANGLE THUMBNAIL
-        rect_thumb = changeImageSize(640, 360, youtube)
-        rect_x = int((1280 - rect_thumb.size[0]) / 2)
-        rect_y = 180
-        background.paste(rect_thumb, (rect_x, rect_y))
+        # 🎵 PLAYER BAR (ROUNDED)
+        bar_x1, bar_y1 = 240, 170
+        bar_x2, bar_y2 = 1040, 520
+        rounded_rectangle(
+            draw,
+            (bar_x1, bar_y1, bar_x2, bar_y2),
+            radius=40,
+            fill=(20, 20, 20, 200),
+        )
+
+        # 🎶 Song thumbnail (rounded square)
+        song_thumb = changeImageSize(200, 200, yt)
+        mask = Image.new("L", song_thumb.size, 0)
+        ImageDraw.Draw(mask).rounded_rectangle(
+            (0, 0, song_thumb.size[0], song_thumb.size[1]),
+            radius=25,
+            fill=255,
+        )
+        bg.paste(song_thumb, (280, 210), mask)
 
         # Fonts
-        arial = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 30)
-        font = ImageFont.truetype("AnonXMusic/assets/font.ttf", 30)
+        font_title = ImageFont.truetype("AnonXMusic/assets/font.ttf", 32)
+        font_small = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 26)
 
-        # Bot Name (Top Right)
+        # Text
+        draw.text((520, 235), title, fill="white", font=font_title)
+        draw.text((520, 275), channel, fill="lightgray", font=font_small)
+
+        # ⏳ Progress bar
+        draw.rounded_rectangle(
+            (520, 330, 980, 345),
+            radius=10,
+            fill=(120, 120, 120),
+        )
+        draw.rounded_rectangle(
+            (520, 330, 720, 345),
+            radius=10,
+            fill=(255, 255, 255),
+        )
+
+        draw.text((520, 355), "00:00", fill="white", font=font_small)
+        draw.text((940, 355), duration, fill="white", font=font_small)
+
+        # ⏯ BUTTONS
+        center_y = 420
+
+        # Previous
+        draw.polygon(
+            [(600, center_y), (620, center_y - 15), (620, center_y + 15)],
+            fill="white",
+        )
+        draw.polygon(
+            [(620, center_y), (640, center_y - 15), (640, center_y + 15)],
+            fill="white",
+        )
+
+        # Play
+        draw.polygon(
+            [(700, center_y - 18), (700, center_y + 18), (735, center_y)],
+            fill="white",
+        )
+
+        # Next
+        draw.polygon(
+            [(800, center_y), (780, center_y - 15), (780, center_y + 15)],
+            fill="white",
+        )
+        draw.polygon(
+            [(820, center_y), (800, center_y - 15), (800, center_y + 15)],
+            fill="white",
+        )
+
+        # Bot name
         draw.text(
-            (1110, 10),
+            (1050, 20),
             unidecode(app.name),
             fill="white",
-            font=arial
+            font=font_small,
         )
 
-        # Channel + Views
-        draw.text(
-            (55, 560),
-            f"{channel} | {views[:23]}",
-            fill="white",
-            font=arial
-        )
-
-        # Title
-        draw.text(
-            (55, 600),
-            clear(title),
-            fill="white",
-            font=font
-        )
-
-        # Progress Line
-        draw.line(
-            [(55, 660), (1220, 660)],
-            fill="white",
-            width=5
-        )
-
-        # Progress Dot
-        draw.ellipse(
-            [(918, 648), (942, 672)],
-            fill="white"
-        )
-
-        # Time
-        draw.text((36, 685), "00:00", fill="white", font=arial)
-        draw.text((1185, 685), duration[:23], fill="white", font=arial)
-
-        # Save
-        background.save(f"cache/{videoid}_{user_id}.png")
-
-        try:
-            os.remove(f"cache/thumb{videoid}.png")
-        except:
-            pass
-
-        return f"cache/{videoid}_{user_id}.png"
+        bg.save(path)
+        os.remove("cache/temp.png")
+        return path
 
     except Exception:
         return YOUTUBE_IMG_URL
