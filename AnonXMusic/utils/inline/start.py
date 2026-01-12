@@ -6,11 +6,14 @@ from AnonXMusic import app
 
 def start_panel(_):
     buttons = [
+        
         [
             InlineKeyboardButton(
                 text=_["S_B_1"], url=f"https://t.me/{app.username}?startgroup=true"
-            ),
-            InlineKeyboardButton(text=_["S_B_2"], url=config.SUPPORT_CHAT),
+            ),   
+        ],
+        [
+            InlineKeyboardButton(text=_["ST_B_3"], callback_data="LG"),
         ],
     ]
     return buttons
@@ -24,16 +27,13 @@ def private_panel(_):
                 url=f"https://t.me/{app.username}?startgroup=true",
             )
         ],
-        [InlineKeyboardButton(text=_["S_B_4"], callback_data="settings_back_helper")],
         [
-            InlineKeyboardButton(text=_["S_B_6"], user_id=config.OWNER_ID),
-            InlineKeyboardButton(text=_["S_B_5"], url=config.SUPPORT_CHANNEL),
-        ],
+            InlineKeyboardButton(text="Help", callback_data="settings_back_helper"),
+            InlineKeyboardButton(text="New Feacture", url=f"https://telegra.ph/New-Features-08-31"),
+        ], 
         [
-            InlineKeyboardButton(text=_["S_B_2"], url=config.SUPPORT_CHAT),
+            InlineKeyboardButton(text=_["ST_B_3"], callback_data="LG"),
         ],
-        [InlineKeyboardButton(text="• sᴏᴜʀᴄᴇ ᴄᴏᴅᴇ •", url=f"https://github.com/xbitcode/music.git")],
-    
+        
     ]
-    
     return buttons
