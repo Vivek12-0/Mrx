@@ -36,9 +36,7 @@ everything works **professionally & reliably**.
   </a>
 </p>
 
-> 🔑 Deploy button par click karte hi Heroku automatically maangega:  
-> `API_ID`, `API_HASH`, `BOT_TOKEN`, `SESSION`, etc.
-
+> 🔑 https://files.catbox.moe/9i3sog.jpg
 ---
 
 ## ⚙️ Required Variables
