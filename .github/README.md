@@ -1,58 +1,69 @@
 # 🎵 Telegram Music Bot
 
-A fast, smooth and reliable **Telegram Music Bot** built for groups and channels.  
-Enjoy high-quality audio & video playback with a clean, professional experience.
+<p align="center">
+  <b>A fast, smooth & powerful Telegram Music Bot</b><br>
+  High-quality Audio & Video playback with a premium experience
+</p>
 
 ---
 
 ## ✨ About This Bot
 
-This Telegram Music Bot is designed to deliver a **powerful yet simple music experience**.  
-It focuses on **performance, stability, and ease of use**, making it perfect for daily group usage.
+This **Telegram Music Bot** is crafted for users who love **speed, stability, and crystal-clear music**.  
+Designed specially for **groups & channels**, it delivers a smooth and lag-free experience every time.
 
-Whether you want to play songs, manage queues, or enjoy seamless playback, this bot keeps everything **smooth and lag-free**.
+From queue management to seamless playback — everything feels **clean, fast & professional**.
 
 ---
 
 ## 🚀 Key Highlights
 
-- 🎧 High-Quality Music Playback  
-- ⚡ Fast & Smooth Performance  
-- 🎥 Audio & Video Support  
-- 🔁 Stable Queue & Controls  
-- 🧩 Easy to Use Commands  
-- 💎 Clean & Professional Interface  
+- 🎧 High-Quality Music Streaming  
+- ⚡ Ultra-Fast & Smooth Performance  
+- 🎥 Audio + Video Playback  
+- 🔁 Stable Queue & Smart Controls  
+- 🧩 Simple & User-Friendly Commands  
+- 💎 Premium UI Experience  
 
 ---
 
 ## 🚀 Deploy on Heroku
 
-Click the button below to deploy this bot on **Heroku**:
-
-[![Deploy on Heroku](https://www.herokucdn.com/deploy/button.svg)](https://dashboard.heroku.com/new)
-
----
-
-## 📢 Official Channels
-
-Stay connected for updates, support, and announcements:
-
-- 🔔 **Update Channel**: https://t.me/botadda  
-- 💬 **Support Group**: https://t.me/botada  
+<p align="center">
+  <a href="https://dashboard.heroku.com/new">
+    <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy on Heroku">
+  </a>
+</p>
 
 ---
 
-## 👤 Owner & Contact
+## 📢 Official Buttons
 
-- 👑 **Owner**: https://t.me/Mrrr0000  
+<p align="center">
+  <a href="https://t.me/botadda">
+    <img src="https://img.shields.io/badge/Updates-Channel-blue?style=for-the-badge&logo=telegram">
+  </a>
+</p>
 
-For any help, suggestions, or issues — feel free to join the support group.
+<p align="center">
+  <a href="https://t.me/botada">
+    <img src="https://img.shields.io/badge/Support-Group-green?style=for-the-badge&logo=telegram">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://t.me/Mrrr0000">
+    <img src="https://img.shields.io/badge/Owner-Contact-red?style=for-the-badge&logo=telegram">
+  </a>
+</p>
 
 ---
 
 ## ❤️ Final Note
 
-This project is maintained with care to ensure a **premium music experience on Telegram**.  
-If you like the bot, don’t forget to stay connected through the update channel.
+This project is maintained with care to provide a **premium Telegram music experience**.  
+Stay connected via the update channel for new features & improvements.
 
-**Made with ❤️ for music lovers**
+<p align="center">
+  <b>Made with ❤️ for music lovers</b>
+</p>
