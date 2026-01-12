@@ -36,7 +36,9 @@ everything works **professionally & reliably**.
   </a>
 </p>
 
-> 🔑 https://files.catbox.moe/9i3sog.jpg
+> <p align="center">
+  <img src="https://files.catbox.moe/9i3sog.jpg" alt="Telegram Music Bot" width="720">
+</p>
 ---
 
 ## ⚙️ Required Variables
