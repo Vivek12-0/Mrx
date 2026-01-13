@@ -89,23 +89,25 @@ autoclean = []
 confirmer = {}
 file_cache: dict[str, float] = {}
 
-START_IMG_URL = ["https://te.legra.ph/file/5fd13f2cc0d03bce9f7f2.jpg",
-                 "https://te.legra.ph/file/c15d01b3e6b40ea141dc9.jpg",
-                 "https://te.legra.ph/file/5fd13f2cc0d03bce9f7f2.jpg"]
+START_IMG_URL = ["https://files.catbox.moe/ujrhz5.jpg",
+
+"https://files.catbox.moe/gcaei5.jpg",
+                 "https://files.catbox.moe/5vckxk.jpg",
+                 "https://files.catbox.moe/yuhksp.jpg"]
     
 PING_IMG_URL = getenv(
-    "PING_IMG_URL", "https://telegra.ph/file/87f680aead03443f291b0.jpg"
+    "PING_IMG_URL", "https://files.catbox.moe/fflohy.jpg"
 )
-PLAYLIST_IMG_URL = "https://graph.org/file/c95a687e777b55be1c792.jpg"
-STATS_IMG_URL = "https://telegra.ph/file/edd388a42dd2c499fd868.jpg"
-TELEGRAM_AUDIO_URL = "https://telegra.ph/file/492a3bb2e880d19750b79.jpg"
-TELEGRAM_VIDEO_URL = "https://telegra.ph/file/492a3bb2e880d19750b79.jpg"
-STREAM_IMG_URL = "https://graph.org/file/ff2af8d4d10afa1baf49e.jpg"
-SOUNCLOUD_IMG_URL = "https://graph.org/file/c95a687e777b55be1c792.jpg"
-YOUTUBE_IMG_URL = "https://graph.org/file/e8730fdece86a1166f608.jpg"
-SPOTIFY_ARTIST_IMG_URL = "https://graph.org/file/0bb6f36796d496b4254ff.jpg"
-SPOTIFY_ALBUM_IMG_URL = "https://graph.org/file/0bb6f36796d496b4254ff.jpg"
-SPOTIFY_PLAYLIST_IMG_URL = "https://graph.org/file/0bb6f36796d496b4254ff.jpg"
+PLAYLIST_IMG_URL = "https://files.catbox.moe/fflohy.jpg"
+STATS_IMG_URL = "https://files.catbox.moe/fflohy.jpg"
+TELEGRAM_AUDIO_URL = "https://files.catbox.moe/qbfd5t.jpg"
+TELEGRAM_VIDEO_URL = "https://files.catbox.moe/qbfd5t.jpg"
+STREAM_IMG_URL = "https://files.catbox.moe/qbfd5t.jpg"
+SOUNCLOUD_IMG_URL = "https://files.catbox.moe/81rnqm.jpg"
+YOUTUBE_IMG_URL = "https://files.catbox.moe/81rnqm.jpg"
+SPOTIFY_ARTIST_IMG_URL = "https://files.catbox.moe/81rnqm.jpg"
+SPOTIFY_ALBUM_IMG_URL = "https://files.catbox.moe/81rnqm.jpg"
+SPOTIFY_PLAYLIST_IMG_URL = "https://files.catbox.moe/81rnqm.jpg"
 
 
 
