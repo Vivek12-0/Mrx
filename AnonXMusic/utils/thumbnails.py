@@ -10,9 +10,15 @@ from AnonXMusic import app
 from config import YOUTUBE_IMG_URL
 
 
-def clean(text, limit=40):
-    text = re.sub(r"\s+", " ", text)
-    return text[:limit]
+def split_title(text, max_chars=28):
+    words = text.split()
+    line1, line2 = "", ""
+    for w in words:
+        if len(line1) + len(w) <= max_chars:
+            line1 += w + " "
+        else:
+            line2 += w + " "
+    return line1.strip(), line2.strip()
 
 
 async def get_thumb(videoid, user_id):
@@ -24,62 +30,83 @@ async def get_thumb(videoid, user_id):
             return final
 
         search = VideosSearch(f"https://www.youtube.com/watch?v={videoid}", limit=1)
-        result = (await search.next())["result"][0]
+        r = (await search.next())["result"][0]
 
-        title = clean(result.get("title", "Unknown Title"))
-        channel = result.get("channel", {}).get("name", "Unknown Channel")
-        duration = result.get("duration", "0:00")
+        title = re.sub(r"\s+", " ", r.get("title", "Unknown Title"))
+        channel = r.get("channel", {}).get("name", "Unknown Channel")
+        duration = r.get("duration", "0:00")
 
-        thumb_url = result["thumbnails"][0]["url"].split("?")[0]
+        t1, t2 = split_title(title)
+
+        thumb_url = r["thumbnails"][0]["url"].split("?")[0]
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(thumb_url) as r:
-                if r.status != 200:
+            async with session.get(thumb_url) as resp:
+                if resp.status != 200:
                     return YOUTUBE_IMG_URL
                 async with aiofiles.open(raw, "wb") as f:
-                    await f.write(await r.read())
+                    await f.write(await resp.read())
 
-        # 🎨 BASE IMAGE
         yt = Image.open(raw).convert("RGBA")
+
+        # 🌑 BACKGROUND
         bg = yt.resize((1280, 720))
-        bg = bg.filter(ImageFilter.GaussianBlur(25))
+        bg = bg.filter(ImageFilter.GaussianBlur(26))
         bg = ImageEnhance.Brightness(bg).enhance(0.35)
 
         # 🧊 PLAYER BOX
         box_x, box_y = 200, 120
-        box_w, box_h = 880, 480
+        box_w, box_h = 880, 500
 
         overlay = Image.new("RGBA", bg.size, (0, 0, 0, 0))
         od = ImageDraw.Draw(overlay)
         od.rounded_rectangle(
             (box_x, box_y, box_x + box_w, box_y + box_h),
-            radius=35,
-            fill=(15, 15, 15, 230)
+            radius=36,
+            fill=(15, 15, 15, 235)
         )
 
         bg = Image.alpha_composite(bg, overlay)
         draw = ImageDraw.Draw(bg)
 
-        # 🎵 COVER IMAGE (INSIDE BOX)
+        # 🎵 COVER
         cover = yt.resize((240, 240))
         bg.paste(cover, (box_x + 40, box_y + 40))
 
-        # 🔤 FONTS (SAFE)
+        # 🔤 FONTS
         try:
-            title_font = ImageFont.truetype("AnonXMusic/assets/font.ttf", 34)
+            title_font = ImageFont.truetype("AnonXMusic/assets/font.ttf", 32)
             small_font = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 24)
+            icon_font = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 60)
         except:
             title_font = ImageFont.load_default()
             small_font = ImageFont.load_default()
+            icon_font = ImageFont.load_default()
 
         text_x = box_x + 320
 
-        # 📝 TITLE + CHANNEL
-        draw.text((text_x, box_y + 60), title, fill="white", font=title_font)
-        draw.text((text_x, box_y + 105), channel, fill=(180, 180, 180), font=small_font)
+        # 📝 TITLE (2 LINES – INSIDE BOX)
+        draw.text((text_x, box_y + 55), t1, fill="white", font=title_font)
+        draw.text((text_x, box_y + 95), t2, fill="white", font=title_font)
 
-        # ⏳ PROGRESS BAR
-        bar_y = box_y + 180
+        # 👤 CHANNEL (MORE DOWN)
+        draw.text(
+            (text_x, box_y + 145),
+            channel,
+            fill=(180, 180, 180),
+            font=small_font
+        )
+
+        # 🎶 MUSIC ICON (EMPTY SPACE FILL)
+        draw.text(
+            (box_x + box_w - 110, box_y + 140),
+            "🎵",
+            fill=(90, 90, 90),
+            font=icon_font
+        )
+
+        # ⏳ PROGRESS BAR (LOWER)
+        bar_y = box_y + 215
         draw.line(
             (text_x, bar_y, box_x + box_w - 60, bar_y),
             fill=(120, 120, 120),
@@ -97,10 +124,15 @@ async def get_thumb(videoid, user_id):
 
         # ⏱ TIME
         draw.text((text_x, bar_y + 18), "0:00", fill="white", font=small_font)
-        draw.text((box_x + box_w - 110, bar_y + 18), duration, fill="white", font=small_font)
+        draw.text(
+            (box_x + box_w - 110, bar_y + 18),
+            duration,
+            fill="white",
+            font=small_font
+        )
 
-        # ⏯ BUTTONS (APPLE STYLE)
-        btn_y = box_y + 260
+        # ⏯ BUTTONS (MORE DOWN)
+        btn_y = box_y + 290
 
         # Prev
         draw.polygon(
@@ -126,9 +158,9 @@ async def get_thumb(videoid, user_id):
             fill="white"
         )
 
-        # 🤖 BOT NAME (INSIDE BOX)
+        # 🤖 BOT NAME (TOP RIGHT INSIDE BOX)
         draw.text(
-            (box_x + box_w - 180, box_y + 25),
+            (box_x + box_w - 190, box_y + 25),
             unidecode(app.name),
             fill=(150, 150, 150),
             font=small_font
