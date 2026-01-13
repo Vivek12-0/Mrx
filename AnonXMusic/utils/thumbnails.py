@@ -14,22 +14,22 @@ FONT_BOLD = "AnonXMusic/assets/font.ttf"
 FONT_REG = "AnonXMusic/assets/font2.ttf"
 
 
-def resize_keep_ratio(img, max_w, max_h):
-    ratio = min(max_w / img.width, max_h / img.height)
-    return img.resize((int(img.width * ratio), int(img.height * ratio)))
+def resize_ratio(img, mw, mh):
+    r = min(mw / img.width, mh / img.height)
+    return img.resize((int(img.width * r), int(img.height * r)))
 
 
-def safe_font(path, size):
+def load_font(path, size):
     try:
         return ImageFont.truetype(path, size)
     except Exception:
         return ImageFont.load_default()
 
 
-def trim_text(draw, text, font, max_width):
-    if draw.textlength(text, font=font) <= max_width:
+def shorten(draw, text, font, width):
+    if draw.textlength(text, font=font) <= width:
         return text
-    while draw.textlength(text + "...", font=font) > max_width:
+    while draw.textlength(text + "...", font=font) > width:
         text = text[:-1]
     return text + "..."
 
@@ -37,75 +37,80 @@ def trim_text(draw, text, font, max_width):
 async def get_thumb(videoid, user_id):
     try:
         os.makedirs(CACHE_DIR, exist_ok=True)
-        final_path = f"{CACHE_DIR}/{videoid}_{user_id}.png"
-
-        if os.path.exists(final_path):
-            return final_path
+        out = f"{CACHE_DIR}/{videoid}_{user_id}.png"
+        if os.path.exists(out):
+            return out
 
         search = VideosSearch(
             f"https://www.youtube.com/watch?v={videoid}", limit=1
         )
-        result = (await search.next())["result"][0]
+        data = (await search.next())["result"][0]
 
-        title = result.get("title", "Unknown Song")
-        channel = result.get("channel", {}).get("name", "YouTube")
-        duration = result.get("duration", "00:00")
-        thumb_url = result["thumbnails"][0]["url"].split("?")[0]
+        title = data.get("title", "Unknown Song")
+        channel = data.get("channel", {}).get("name", "YouTube")
+        duration = data.get("duration", "00:00")
+        thumb_url = data["thumbnails"][0]["url"].split("?")[0]
 
-        temp_path = f"{CACHE_DIR}/temp.png"
+        temp = f"{CACHE_DIR}/temp.png"
+        async with aiohttp.ClientSession() as s:
+            async with s.get(thumb_url) as r:
+                async with aiofiles.open(temp, "wb") as f:
+                    await f.write(await r.read())
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(thumb_url) as resp:
-                async with aiofiles.open(temp_path, "wb") as f:
-                    await f.write(await resp.read())
+        cover = Image.open(temp).convert("RGBA")
 
-        cover = Image.open(temp_path).convert("RGBA")
+        base = resize_ratio(cover, 1280, 720)
 
-        base = resize_keep_ratio(cover, 1280, 720)
-        bg = base.filter(ImageFilter.GaussianBlur(18))
-        bg = ImageEnhance.Brightness(bg).enhance(0.45)
+        # 🔆 LIGHTER BACKGROUND (75% DARK)
+        bg = base.filter(ImageFilter.GaussianBlur(16))
+        bg = ImageEnhance.Brightness(bg).enhance(0.62)  # 🔥 main change
 
         draw = ImageDraw.Draw(bg)
 
-        # Player Card
-        card = (200, 150, 1080, 560)
-        draw.rounded_rectangle(card, radius=45, fill=(25, 25, 25, 230))
+        # Player Card (lighter than before)
+        draw.rounded_rectangle(
+            (200, 150, 1080, 560),
+            radius=42,
+            fill=(35, 35, 35, 210),
+        )
 
-        # Album art
-        art = resize_keep_ratio(cover, 230, 230)
+        # Album Art
+        art = resize_ratio(cover, 230, 230)
         mask = Image.new("L", art.size, 0)
         ImageDraw.Draw(mask).rounded_rectangle(
-            (0, 0, art.width, art.height), radius=30, fill=255
+            (0, 0, art.width, art.height), 30, fill=255
         )
         bg.paste(art, (250, 220), mask)
 
         # Fonts
-        font_title = safe_font(FONT_BOLD, 34)
-        font_small = safe_font(FONT_REG, 26)
+        font_title = load_font(FONT_BOLD, 34)
+        font_small = load_font(FONT_REG, 26)
 
-        title = trim_text(draw, title, font_title, 430)
+        title = shorten(draw, title, font_title, 440)
 
-        draw.text((520, 240), "Now Playing", fill="#AAAAAA", font=font_small)
-        draw.text((520, 280), title, fill="white", font=font_title)
-        draw.text((520, 325), channel, fill="#CCCCCC", font=font_small)
+        # Text
+        draw.text((520, 235), "Now Playing", fill="#E0E0E0", font=font_small)
+        draw.text((520, 275), title, fill="white", font=font_title)
+        draw.text((520, 320), channel, fill="#D0D0D0", font=font_small)
 
-        # Progress bar
-        draw.rounded_rectangle((520, 380, 950, 395), 10, fill=(90, 90, 90))
-        draw.rounded_rectangle((520, 380, 720, 395), 10, fill=(255, 255, 255))
+        # Progress Bar
+        draw.rounded_rectangle((520, 375, 950, 392), 10, fill=(120, 120, 120))
+        draw.rounded_rectangle((520, 375, 735, 392), 10, fill=(255, 255, 255))
 
-        draw.text((520, 405), "0:00", fill="white", font=font_small)
-        draw.text((905, 405), duration, fill="white", font=font_small)
+        draw.text((520, 402), "0:00", fill="white", font=font_small)
+        draw.text((905, 402), duration, fill="white", font=font_small)
 
         # Controls
         y = 465
-        draw.polygon([(660, y), (690, y - 18), (690, y + 18)], fill="white")
-        draw.polygon([(690, y), (720, y - 18), (720, y + 18)], fill="white")
+        draw.polygon([(660, y), (690, y - 16), (690, y + 16)], fill="white")
+        draw.polygon([(690, y), (720, y - 16), (720, y + 16)], fill="white")
 
-        draw.polygon([(760, y - 22), (760, y + 22), (805, y)], fill="white")
+        draw.polygon([(760, y - 20), (760, y + 20), (800, y)], fill="white")
 
-        draw.polygon([(850, y), (820, y - 18), (820, y + 18)], fill="white")
-        draw.polygon([(880, y), (850, y - 18), (850, y + 18)], fill="white")
+        draw.polygon([(845, y), (815, y - 16), (815, y + 16)], fill="white")
+        draw.polygon([(875, y), (845, y - 16), (845, y + 16)], fill="white")
 
+        # Bot Name
         draw.text(
             (30, 20),
             unidecode(app.name),
@@ -113,10 +118,9 @@ async def get_thumb(videoid, user_id):
             font=font_small,
         )
 
-        bg.save(final_path)
-        os.remove(temp_path)
-
-        return final_path
+        bg.save(out)
+        os.remove(temp)
+        return out
 
     except Exception:
         return YOUTUBE_IMG_URL
