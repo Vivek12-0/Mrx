@@ -1,108 +1,155 @@
-import os, random, aiofiles, aiohttp
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter
+import os
+import re
+import aiohttp
+import aiofiles
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont
 from ytSearch import VideosSearch
+from unidecode import unidecode
 
+from AnonXMusic import app
 from config import YOUTUBE_IMG_URL
 
 
-def short(txt):
-    return txt[:22]
+def trim_text(text, max_len=40):
+    if len(text) > max_len:
+        return text[:max_len-3] + "..."
+    return text
 
 
-def rand_time():
-    return f"{random.randint(0,2)}:{random.randint(10,59)}"
+def split_title(text):
+    words = text.split()
+    mid = len(words)//2
+    return " ".join(words[:mid]), " ".join(words[mid:])
 
 
 async def get_thumb(videoid, user_id):
-
     try:
-        file = f"cache/{videoid}_{user_id}.png"
-        if os.path.isfile(file):
-            return file
+        final = f"cache/{videoid}_{user_id}.png"
+        raw = f"cache/raw_{videoid}.jpg"
 
-        url = f"https://youtube.com/watch?v={videoid}"
-        search = VideosSearch(url, limit=1)
+        if os.path.exists(final):
+            return final
 
-        for r in (await search.next())["result"]:
-            title = r["title"]
-            channel = r["channel"]["name"]
-            thumb = r["thumbnails"][0]["url"].split("?")[0]
+        search = VideosSearch(f"https://www.youtube.com/watch?v={videoid}", limit=1)
+        r = (await search.next())["result"][0]
 
-        # download
-        async with aiohttp.ClientSession() as s:
-            async with s.get(thumb) as r:
-                async with aiofiles.open("cache/temp.jpg","wb") as f:
-                    await f.write(await r.read())
+        title = re.sub(r"\s+", " ", r.get("title", "Unknown Title"))
+        channel = r.get("channel", {}).get("name", "Unknown Channel")
+        duration = r.get("duration", "0:00")
 
-        base = Image.open("cache/temp.jpg").convert("RGBA")
+        title = trim_text(title, 60)
+        t1, t2 = split_title(title)
+
+        thumb_url = r["thumbnails"][0]["url"].split("?")[0]
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(thumb_url) as resp:
+                if resp.status != 200:
+                    return YOUTUBE_IMG_URL
+                async with aiofiles.open(raw, "wb") as f:
+                    await f.write(await resp.read())
+
+        yt = Image.open(raw).convert("RGBA")
 
         # BACKGROUND
-        bg = base.resize((1280,720))
-        bg = bg.filter(ImageFilter.GaussianBlur(25))
-        bg = ImageEnhance.Brightness(bg).enhance(0.4)
+        bg = yt.resize((1280, 720))
+        bg = bg.filter(ImageFilter.GaussianBlur(30))
+        bg = ImageEnhance.Brightness(bg).enhance(0.25)
 
+        # PLAYER BOX
+        box_x, box_y = 150, 90
+        box_w, box_h = 980, 540
+
+        overlay = Image.new("RGBA", bg.size, (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+        od.rounded_rectangle(
+            (box_x, box_y, box_x + box_w, box_y + box_h),
+            radius=45,
+            fill=(18, 18, 18, 240)
+        )
+
+        bg = Image.alpha_composite(bg, overlay)
         draw = ImageDraw.Draw(bg)
 
-        # GLASS CARD
-        card = Image.new("RGBA",(900,350),(0,0,0,160))
-        bg.paste(card,(190,185),card)
-
-        # ALBUM THUMB
-        album = base.resize((220,220))
-        bg.paste(album,(220,215))
+        # COVER
+        cover = yt.resize((260, 260))
+        bg.paste(cover, (box_x + 50, box_y + 60))
 
         # FONTS
-        title_f = ImageFont.truetype("AnonXMusic/assets/font.ttf",34)
-        small = ImageFont.truetype("AnonXMusic/assets/font2.ttf",22)
+        try:
+            title_font = ImageFont.truetype("AnonXMusic/assets/font.ttf", 36)
+            small_font = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 24)
+        except:
+            title_font = ImageFont.load_default()
+            small_font = ImageFont.load_default()
+
+        text_x = box_x + 350
 
         # TITLE
-        draw.text(
-            (480,240),
-            short(title),
-            fill="white",
-            font=title_f
-        )
+        draw.text((text_x, box_y + 70), t1, fill="white", font=title_font)
+        draw.text((text_x, box_y + 115), t2, fill="white", font=title_font)
 
         # CHANNEL
         draw.text(
-            (480,280),
+            (text_x, box_y + 165),
             channel,
-            fill="#cccccc",
-            font=small
+            fill=(180, 180, 180),
+            font=small_font
+        )
+
+        # PROGRESS BAR
+        bar_y = box_y + 230
+        draw.line(
+            (text_x, bar_y, box_x + box_w - 80, bar_y),
+            fill=(120, 120, 120),
+            width=6
+        )
+        draw.line(
+            (text_x, bar_y, text_x + 240, bar_y),
+            fill="white",
+            width=6
+        )
+        draw.ellipse(
+            (text_x + 230, bar_y - 8, text_x + 250, bar_y + 12),
+            fill="white"
         )
 
         # TIME
-        t1 = rand_time()
-        t2 = rand_time()
+        draw.text((text_x, bar_y + 20), "0:00", fill="white", font=small_font)
+        draw.text(
+            (box_x + box_w - 130, bar_y + 20),
+            duration,
+            fill="white",
+            font=small_font
+        )
 
-        draw.text((480,315),t1,fill="white",font=small)
-        draw.text((900,315),f"-{t2}",fill="white",font=small)
+        # BUTTONS
+        btn_y = box_y + 310
 
-        # PROGRESS BAR
-        x1,x2,y = 480,900,340
-        draw.line([(x1,y),(x2,y)],fill="#777",width=6)
-        draw.line([(x1,y),(x1+160,y)],fill="white",width=6)
+        # Prev
+        draw.polygon([(text_x+40, btn_y+15),(text_x+70, btn_y),(text_x+70, btn_y+30)], fill="white")
+        draw.polygon([(text_x+20, btn_y+15),(text_x+40, btn_y),(text_x+40, btn_y+30)], fill="white")
 
-        draw.ellipse((x1+150,y-8,x1+166,y+8),fill="white")
+        # Pause
+        draw.rectangle((text_x+100, btn_y, text_x+112, btn_y+32), fill="white")
+        draw.rectangle((text_x+125, btn_y, text_x+137, btn_y+32), fill="white")
 
-        # CONTROLS
-        f = ImageFont.truetype("AnonXMusic/assets/font2.ttf",36)
+        # Next
+        draw.polygon([(text_x+170, btn_y),(text_x+170, btn_y+30),(text_x+200, btn_y+15)], fill="white")
+        draw.polygon([(text_x+200, btn_y),(text_x+200, btn_y+30),(text_x+230, btn_y+15)], fill="white")
 
-        draw.text((520,370),"⏮",fill="white",font=f)
-        draw.text((600,365),"⏸",fill="white",font=f)
-        draw.text((680,370),"⏭",fill="white",font=f)
+        # BOT NAME
+        draw.text(
+            (box_x + box_w - 220, box_y + 30),
+            unidecode(app.name),
+            fill=(150,150,150),
+            font=small_font
+        )
 
-        # VOLUME
-        draw.text((760,370),"🔊",fill="white",font=small)
-        draw.text((870,370),"🔇",fill="white",font=small)
+        bg.convert("RGB").save(final)
+        os.remove(raw)
+        return final
 
-        draw.line([(800,390),(860,390)],fill="white",width=4)
-        draw.ellipse((825,382,837,394),fill="white")
-
-        bg.save(file)
-        os.remove("cache/temp.jpg")
-
-        return file
-
-    except:
+    except Exception as e:
+        print(e)
         return YOUTUBE_IMG_URL
