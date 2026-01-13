@@ -53,19 +53,20 @@ async def get_thumb(videoid, user_id):
 
         # BACKGROUND
         bg = yt.resize((1280, 720))
-        bg = bg.filter(ImageFilter.GaussianBlur(30))
-        bg = ImageEnhance.Brightness(bg).enhance(0.25)
+        bg = bg.filter(ImageFilter.GaussianBlur(28))
+        bg = ImageEnhance.Brightness(bg).enhance(0.30)
 
-        # PLAYER BOX
+        # PLAYER BOX (LIGHT BLACK TRANSPARENT)
         box_x, box_y = 150, 90
         box_w, box_h = 980, 540
 
         overlay = Image.new("RGBA", bg.size, (0, 0, 0, 0))
         od = ImageDraw.Draw(overlay)
+
         od.rounded_rectangle(
             (box_x, box_y, box_x + box_w, box_y + box_h),
             radius=45,
-            fill=(18, 18, 18, 240)
+            fill=(25, 25, 25, 180)  # 👈 LIGHT BLACK + TRANSPARENT
         )
 
         bg = Image.alpha_composite(bg, overlay)
@@ -93,7 +94,7 @@ async def get_thumb(videoid, user_id):
         draw.text(
             (text_x, box_y + 165),
             channel,
-            fill=(180, 180, 180),
+            fill=(200, 200, 200),
             font=small_font
         )
 
@@ -101,23 +102,23 @@ async def get_thumb(videoid, user_id):
         bar_y = box_y + 230
         draw.line(
             (text_x, bar_y, box_x + box_w - 80, bar_y),
-            fill=(120, 120, 120),
-            width=6
+            fill=(160, 160, 160),
+            width=5
         )
         draw.line(
             (text_x, bar_y, text_x + 240, bar_y),
             fill="white",
-            width=6
+            width=5
         )
         draw.ellipse(
-            (text_x + 230, bar_y - 8, text_x + 250, bar_y + 12),
+            (text_x + 232, bar_y - 7, text_x + 252, bar_y + 11),
             fill="white"
         )
 
         # TIME
-        draw.text((text_x, bar_y + 20), "0:00", fill="white", font=small_font)
+        draw.text((text_x, bar_y + 18), "0:00", fill="white", font=small_font)
         draw.text(
-            (box_x + box_w - 130, bar_y + 20),
+            (box_x + box_w - 130, bar_y + 18),
             duration,
             fill="white",
             font=small_font
@@ -142,7 +143,7 @@ async def get_thumb(videoid, user_id):
         draw.text(
             (box_x + box_w - 220, box_y + 30),
             unidecode(app.name),
-            fill=(150,150,150),
+            fill=(170,170,170),
             font=small_font
         )
 
