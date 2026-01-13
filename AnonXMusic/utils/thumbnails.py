@@ -1,34 +1,3 @@
-import os
-import re
-import aiofiles
-import aiohttp
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from ytSearch import VideosSearch
-from unidecode import unidecode
-
-from AnonXMusic import app
-from config import YOUTUBE_IMG_URL
-
-
-def changeImageSize(maxWidth, maxHeight, image):
-    ratio = min(maxWidth / image.size[0], maxHeight / image.size[1])
-    return image.resize(
-        (int(image.size[0] * ratio), int(image.size[1] * ratio))
-    )
-
-
-def fit_text(draw, text, font, max_width):
-    if draw.textlength(text, font=font) <= max_width:
-        return text
-    while draw.textlength(text + "...", font=font) > max_width:
-        text = text[:-1]
-    return text + "..."
-
-
-def rounded_rectangle(draw, xy, radius, fill):
-    draw.rounded_rectangle(xy, radius=radius, fill=fill)
-
-
 async def get_thumb(videoid, user_id):
     try:
         path = f"cache/{videoid}_{user_id}.png"
@@ -41,7 +10,7 @@ async def get_thumb(videoid, user_id):
         result = (await search.next())["result"][0]
 
         title = result.get("title", "Unknown Title")
-        title = " ".join(title.split()[:4])  # max 3–4 words
+        title = " ".join(title.split()[:6])
         duration = result.get("duration", "00:00")
         channel = result.get("channel", {}).get("name", "")
         thumb_url = result["thumbnails"][0]["url"].split("?")[0]
@@ -53,80 +22,68 @@ async def get_thumb(videoid, user_id):
 
         yt = Image.open("cache/temp.png").convert("RGBA")
 
+        # Background
         base = changeImageSize(1280, 720, yt)
-        bg = base.filter(ImageFilter.GaussianBlur(15))
-        bg = ImageEnhance.Brightness(bg).enhance(0.45)
+        bg = base.filter(ImageFilter.GaussianBlur(20))
+        bg = ImageEnhance.Brightness(bg).enhance(0.35)
 
         draw = ImageDraw.Draw(bg)
 
-        # 🎵 PLAYER BAR
-        bar_x1, bar_y1 = 220, 160
-        bar_x2, bar_y2 = 1060, 520
-        rounded_rectangle(
-            draw,
-            (bar_x1, bar_y1, bar_x2, bar_y2),
-            radius=40,
-            fill=(40, 40, 40, 220),
-        )
+        # Glass Player Bar
+        bar = (180, 160, 1100, 520)
+        draw.rounded_rectangle(bar, radius=45, fill=(25, 25, 25, 220))
 
-        # 🎶 Song Thumbnail (rounded rectangle)
-        song_thumb = changeImageSize(200, 200, yt)
-        mask = Image.new("L", song_thumb.size, 0)
+        # Song Thumbnail
+        thumb = changeImageSize(220, 220, yt)
+        mask = Image.new("L", thumb.size, 0)
         ImageDraw.Draw(mask).rounded_rectangle(
-            (0, 0, song_thumb.size[0], song_thumb.size[1]),
-            radius=30,
-            fill=255,
+            (0, 0, thumb.size[0], thumb.size[1]), radius=30, fill=255
         )
-        bg.paste(song_thumb, (260, 210), mask)
+        bg.paste(thumb, (220, 200), mask)
 
         # Fonts
-        font_title = ImageFont.truetype(
-            "AnonXMusic/assets/font.ttf", 32
-        )
-        font_small = ImageFont.truetype(
-            "AnonXMusic/assets/font2.ttf", 26
-        )
+        font_title = ImageFont.truetype("AnonXMusic/assets/font.ttf", 36)
+        font_small = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 26)
 
-        # Title (SAFE WIDTH)
-        safe_title = fit_text(draw, title, font_title, 420)
-        draw.text((500, 235), safe_title, fill="white", font=font_title)
-        draw.text((500, 275), channel, fill="lightgray", font=font_small)
+        # Text
+        draw.text((480, 210), "Now Playing", fill="gray", font=font_small)
 
-        # ⏳ Progress bar
+        safe_title = fit_text(draw, title, font_title, 520)
+        draw.text((480, 250), safe_title, fill="white", font=font_title)
+        draw.text((480, 295), channel, fill="lightgray", font=font_small)
+
+        # Progress Bar
         draw.rounded_rectangle(
-            (500, 330, 960, 345),
-            radius=10,
-            fill=(120, 120, 120),
+            (480, 350, 980, 360), radius=6, fill=(100, 100, 100)
         )
         draw.rounded_rectangle(
-            (500, 330, 720, 345),
-            radius=10,
-            fill=(255, 255, 255),
+            (480, 350, 720, 360), radius=6, fill=(255, 255, 255)
         )
 
-        draw.text((500, 355), "00:00", fill="white", font=font_small)
-        draw.text((915, 355), duration, fill="white", font=font_small)
+        draw.text((480, 370), "0:00", fill="white", font=font_small)
+        draw.text((950, 370), duration, fill="white", font=font_small)
 
-        # ⏯ Buttons
-        cy = 430
+        # Controls
+        cy = 440
 
-        # Previous
-        draw.polygon([(610, cy), (630, cy - 15), (630, cy + 15)], fill="white")
-        draw.polygon([(630, cy), (650, cy - 15), (650, cy + 15)], fill="white")
+        # Shuffle
+        draw.arc((480, cy - 15, 520, cy + 15), 0, 300, fill="white", width=3)
+
+        # Prev
+        draw.polygon([(580, cy), (610, cy - 15), (610, cy + 15)], fill="white")
+        draw.polygon([(610, cy), (640, cy - 15), (640, cy + 15)], fill="white")
 
         # Play
-        draw.polygon(
-            [(705, cy - 18), (705, cy + 18), (740, cy)],
-            fill="white",
-        )
+        draw.ellipse((690, cy - 22, 730, cy + 22), outline="white", width=3)
+        draw.polygon([(705, cy - 12), (705, cy + 12), (725, cy)], fill="white")
 
         # Next
-        draw.polygon([(800, cy), (780, cy - 15), (780, cy + 15)], fill="white")
-        draw.polygon([(820, cy), (800, cy - 15), (800, cy + 15)], fill="white")
+        draw.polygon([(780, cy), (750, cy - 15), (750, cy + 15)], fill="white")
+        draw.polygon([(810, cy), (780, cy - 15), (780, cy + 15)], fill="white")
 
         # Bot Name
         draw.text(
-            (1050, 20),
+            (1050, 25),
             unidecode(app.name),
             fill="white",
             font=font_small,
