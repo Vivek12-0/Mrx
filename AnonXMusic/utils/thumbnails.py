@@ -6,13 +6,11 @@ from config import YOUTUBE_IMG_URL
 
 
 def short(txt):
-    return txt[:7]
+    return txt[:22]
 
 
 def rand_time():
-    m = random.randint(0,4)
-    s = random.randint(10,59)
-    return f"{m}:{s}"
+    return f"{random.randint(0,2)}:{random.randint(10,59)}"
 
 
 async def get_thumb(videoid, user_id):
@@ -38,96 +36,68 @@ async def get_thumb(videoid, user_id):
 
         base = Image.open("cache/temp.jpg").convert("RGBA")
 
-        # BLUR BACKGROUND
+        # BACKGROUND
         bg = base.resize((1280,720))
         bg = bg.filter(ImageFilter.GaussianBlur(25))
         bg = ImageEnhance.Brightness(bg).enhance(0.4)
 
         draw = ImageDraw.Draw(bg)
 
-        # CLEAR RECTANGLE
-        rect = base.resize((620,330))
-        rx = (1280-620)//2
-        ry = 60
-        bg.paste(rect,(rx,ry))
+        # GLASS CARD
+        card = Image.new("RGBA",(900,350),(0,0,0,160))
+        bg.paste(card,(190,185),card)
 
-        # BORDER
-        draw.rounded_rectangle(
-            (rx-5,ry-5,rx+625,ry+335),
-            radius=25,
-            outline="white",
-            width=4
-        )
-
-        # WAVEFORM DESIGN
-        cx = 640
-        cy = 225
-
-        for i in range(-230,230,18):
-            h = abs(i)%90+20
-            draw.line(
-                [(cx+i,cy-h),(cx+i,cy+h)],
-                fill="white",
-                width=3
-            )
+        # ALBUM THUMB
+        album = base.resize((220,220))
+        bg.paste(album,(220,215))
 
         # FONTS
-        title_f = ImageFont.truetype("AnonXMusic/assets/font.ttf",32)
-        small = ImageFont.truetype("AnonXMusic/assets/font2.ttf",20)
+        title_f = ImageFont.truetype("AnonXMusic/assets/font.ttf",34)
+        small = ImageFont.truetype("AnonXMusic/assets/font2.ttf",22)
 
         # TITLE
         draw.text(
-            (640,410),
+            (480,240),
             short(title),
             fill="white",
-            font=title_f,
-            anchor="mm"
+            font=title_f
         )
 
         # CHANNEL
         draw.text(
-            (640,440),
+            (480,280),
             channel,
-            fill="white",
-            font=small,
-            anchor="mm"
+            fill="#cccccc",
+            font=small
         )
 
-        # DURATION
+        # TIME
         t1 = rand_time()
         t2 = rand_time()
 
-        draw.text((350,480),t1,fill="white",font=small)
-        draw.text((900,480),t2,fill="white",font=small)
+        draw.text((480,315),t1,fill="white",font=small)
+        draw.text((900,315),f"-{t2}",fill="white",font=small)
 
         # PROGRESS BAR
-        bar_x1 = 380
-        bar_x2 = 900
-        y = 500
+        x1,x2,y = 480,900,340
+        draw.line([(x1,y),(x2,y)],fill="#777",width=6)
+        draw.line([(x1,y),(x1+160,y)],fill="white",width=6)
 
-        draw.line([(bar_x1,y),(bar_x2,y)],fill="#555",width=8)
-        draw.line([(bar_x1,y),(bar_x1+200,y)],fill="white",width=8)
-
-        draw.ellipse(
-            (bar_x1+190,y-10,bar_x1+210,y+10),
-            fill="white"
-        )
+        draw.ellipse((x1+150,y-8,x1+166,y+8),fill="white")
 
         # CONTROLS
-        f = ImageFont.truetype("AnonXMusic/assets/font2.ttf",30)
+        f = ImageFont.truetype("AnonXMusic/assets/font2.ttf",36)
 
-        draw.text((520,535),"⏮",fill="white",font=f)
-        draw.text((600,530),"▶",fill="white",font=f)
-        draw.text((680,535),"⏭",fill="white",font=f)
+        draw.text((520,370),"⏮",fill="white",font=f)
+        draw.text((600,365),"⏸",fill="white",font=f)
+        draw.text((680,370),"⏭",fill="white",font=f)
 
-        # VOLUME BAR
-        vy = 580
+        # VOLUME
+        draw.text((760,370),"🔊",fill="white",font=small)
+        draw.text((870,370),"🔇",fill="white",font=small)
 
-        draw.text((430,570),"🔊",fill="white",font=f)
-        draw.text((800,570),"🔇",fill="white",font=f)
-
-        draw.line([(480,580),(780,580)],fill="white",width=4)
-        draw.ellipse((610,570,630,590),fill="white")
+        draw.line([(800,390),(860,390)],fill="white",width=4)
+        draw.ellipse((825,382,837,394),fill="white")
 
         bg.save(file)
         os.remove("cache/temp.jpg")
