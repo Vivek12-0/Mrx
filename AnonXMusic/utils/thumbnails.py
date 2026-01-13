@@ -10,15 +10,20 @@ from AnonXMusic import app
 from config import YOUTUBE_IMG_URL
 
 
-def split_title(text, max_chars=28):
+def wrap_text(draw, text, font, max_width):
+    lines = []
     words = text.split()
-    line1, line2 = "", ""
-    for w in words:
-        if len(line1) + len(w) <= max_chars:
-            line1 += w + " "
+    line = ""
+    for word in words:
+        test = f"{line} {word}".strip()
+        if draw.textlength(test, font=font) <= max_width:
+            line = test
         else:
-            line2 += w + " "
-    return line1.strip(), line2.strip()
+            lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
+    return lines
 
 
 async def get_thumb(videoid, user_id):
@@ -36,8 +41,6 @@ async def get_thumb(videoid, user_id):
         channel = r.get("channel", {}).get("name", "Unknown Channel")
         duration = r.get("duration", "0:00")
 
-        t1, t2 = split_title(title)
-
         thumb_url = r["thumbnails"][0]["url"].split("?")[0]
 
         async with aiohttp.ClientSession() as session:
@@ -51,18 +54,18 @@ async def get_thumb(videoid, user_id):
 
         # 🌑 BACKGROUND
         bg = yt.resize((1280, 720))
-        bg = bg.filter(ImageFilter.GaussianBlur(26))
-        bg = ImageEnhance.Brightness(bg).enhance(0.35)
+        bg = bg.filter(ImageFilter.GaussianBlur(28))
+        bg = ImageEnhance.Brightness(bg).enhance(0.33)
 
         # 🧊 PLAYER BOX
-        box_x, box_y = 200, 120
-        box_w, box_h = 880, 500
+        box_x, box_y = 160, 120
+        box_w, box_h = 960, 500
 
         overlay = Image.new("RGBA", bg.size, (0, 0, 0, 0))
         od = ImageDraw.Draw(overlay)
         od.rounded_rectangle(
             (box_x, box_y, box_x + box_w, box_y + box_h),
-            radius=36,
+            radius=38,
             fill=(15, 15, 15, 235)
         )
 
@@ -70,105 +73,77 @@ async def get_thumb(videoid, user_id):
         draw = ImageDraw.Draw(bg)
 
         # 🎵 COVER
-        cover = yt.resize((240, 240))
+        cover = yt.resize((230, 230))
         bg.paste(cover, (box_x + 40, box_y + 40))
 
         # 🔤 FONTS
         try:
             title_font = ImageFont.truetype("AnonXMusic/assets/font.ttf", 32)
             small_font = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 24)
-            icon_font = ImageFont.truetype("AnonXMusic/assets/font2.ttf", 60)
         except:
             title_font = ImageFont.load_default()
             small_font = ImageFont.load_default()
-            icon_font = ImageFont.load_default()
 
-        text_x = box_x + 320
+        text_x = box_x + 310
+        max_text_width = box_x + box_w - text_x - 40
 
-        # 📝 TITLE (2 LINES – INSIDE BOX)
-        draw.text((text_x, box_y + 55), t1, fill="white", font=title_font)
-        draw.text((text_x, box_y + 95), t2, fill="white", font=title_font)
+        # 📝 TITLE (AUTO MULTI-LINE, NEVER OUTSIDE)
+        lines = wrap_text(draw, title, title_font, max_text_width)
+        y = box_y + 50
+        for line in lines[:4]:   # max 4 lines (Apple style)
+            draw.text((text_x, y), line, fill="white", font=title_font)
+            y += 36
 
-        # 👤 CHANNEL (MORE DOWN)
+        # 👤 CHANNEL
         draw.text(
-            (text_x, box_y + 145),
+            (text_x, y + 5),
             channel,
             fill=(180, 180, 180),
             font=small_font
         )
 
-        # 🎶 MUSIC ICON (EMPTY SPACE FILL)
-        draw.text(
-            (box_x + box_w - 110, box_y + 140),
-            "🎵",
-            fill=(90, 90, 90),
-            font=icon_font
-        )
-
-        # ⏳ PROGRESS BAR (LOWER)
-        bar_y = box_y + 215
-        draw.line(
-            (text_x, bar_y, box_x + box_w - 60, bar_y),
-            fill=(120, 120, 120),
-            width=6
-        )
-        draw.line(
-            (text_x, bar_y, text_x + 220, bar_y),
-            fill="white",
-            width=6
-        )
-        draw.ellipse(
-            (text_x + 210, bar_y - 8, text_x + 230, bar_y + 12),
-            fill="white"
-        )
+        # ⏳ PROGRESS BAR
+        bar_y = box_y + 235
+        draw.line((text_x, bar_y, box_x + box_w - 60, bar_y), fill=(120,120,120), width=6)
+        draw.line((text_x, bar_y, text_x + 260, bar_y), fill="white", width=6)
+        draw.ellipse((text_x + 250, bar_y - 9, text_x + 270, bar_y + 13), fill="white")
 
         # ⏱ TIME
         draw.text((text_x, bar_y + 18), "0:00", fill="white", font=small_font)
-        draw.text(
-            (box_x + box_w - 110, bar_y + 18),
-            duration,
-            fill="white",
-            font=small_font
-        )
+        draw.text((box_x + box_w - 120, bar_y + 18), duration, fill="white", font=small_font)
 
-        # ⏯ BUTTONS (MORE DOWN)
-        btn_y = box_y + 290
+        # 🎛 CONTROLS (SECOND IMAGE STYLE)
+        cy = box_y + 315
+        cx = box_x + box_w // 2
+
+        # Shuffle
+        draw.arc((cx-260,cy-10,cx-220,cy+30),0,270,fill="white",width=3)
 
         # Prev
-        draw.polygon(
-            [(text_x+40, btn_y+15), (text_x+70, btn_y), (text_x+70, btn_y+30)],
-            fill="white"
-        )
-        draw.polygon(
-            [(text_x+20, btn_y+15), (text_x+40, btn_y), (text_x+40, btn_y+30)],
-            fill="white"
-        )
+        draw.polygon([(cx-140,cy),(cx-110,cy+15),(cx-140,cy+30)], fill="white")
+        draw.rectangle((cx-150,cy,cx-145,cy+30), fill="white")
 
-        # Pause
-        draw.rectangle((text_x+100, btn_y, text_x+110, btn_y+30), fill="white")
-        draw.rectangle((text_x+120, btn_y, text_x+130, btn_y+30), fill="white")
+        # Play (BIG)
+        draw.ellipse((cx-25,cy-10,cx+25,cy+40), outline="white", width=4)
+        draw.polygon([(cx-8,cy),(cx+12,cy+15),(cx-8,cy+30)], fill="white")
 
         # Next
-        draw.polygon(
-            [(text_x+170, btn_y), (text_x+170, btn_y+30), (text_x+200, btn_y+15)],
-            fill="white"
-        )
-        draw.polygon(
-            [(text_x+200, btn_y), (text_x+200, btn_y+30), (text_x+230, btn_y+15)],
-            fill="white"
-        )
+        draw.polygon([(cx+110,cy),(cx+110,cy+30),(cx+140,cy+15)], fill="white")
+        draw.rectangle((cx+145,cy,cx+150,cy+30), fill="white")
 
-        # 🤖 BOT NAME (TOP RIGHT INSIDE BOX)
+        # Repeat
+        draw.arc((cx+220,cy-10,cx+260,cy+30),180,450,fill="white",width=3)
+
+        # 🤖 BOT NAME
         draw.text(
-            (box_x + box_w - 190, box_y + 25),
+            (box_x + box_w - 200, box_y + 22),
             unidecode(app.name),
-            fill=(150, 150, 150),
+            fill=(150,150,150),
             font=small_font
         )
 
         bg.convert("RGB").save(final)
         os.remove(raw)
-
         return final
 
     except Exception:
